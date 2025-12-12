@@ -8,10 +8,17 @@ function Test() {
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
+  const [userStats, setUserStats] = useState({ completed: 0, average: 0 });
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/');
+      return;
+    }
     fetchTests();
-  }, []);
+    fetchUserStats();
+  }, [navigate]);
 
   const fetchTests = async () => {
     try {
@@ -22,6 +29,21 @@ function Test() {
       setTests([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserStats = async () => {
+    try {
+      const response = await api.get('/user/results');
+      const results = response.data;
+      setUserStats({
+        completed: results.length,
+        average: results.length > 0 
+          ? Math.round(results.reduce((sum, r) => sum + r.percentage, 0) / results.length)
+          : 0
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
     }
   };
 
@@ -66,7 +88,7 @@ function Test() {
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <Award className="w-6 h-6 text-green-600" />
               </div>
-              <span className="text-2xl font-bold text-gray-900">0</span>
+              <span className="text-2xl font-bold text-gray-900">{userStats.completed}</span>
             </div>
             <p className="text-sm text-gray-600">Tests Completed</p>
           </div>
@@ -76,7 +98,9 @@ function Test() {
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-purple-600" />
               </div>
-              <span className="text-2xl font-bold text-gray-900">--</span>
+              <span className="text-2xl font-bold text-gray-900">
+                {userStats.average > 0 ? `${userStats.average}%` : '--'}
+              </span>
             </div>
             <p className="text-sm text-gray-600">Average Score</p>
           </div>

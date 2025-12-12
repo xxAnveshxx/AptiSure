@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronRight, RefreshCw, Sparkles } from 'lucide-react';
 import QuestionCard from '../components/QuestionCard';
 import { TOPICS } from '../config/topics';
 import api from '../utils/api';
 
 function Practice() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState('random');
   const [selectedTopic, setSelectedTopic] = useState('Mixed Practice');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -19,6 +21,13 @@ function Practice() {
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/');
+    }
+  }, [navigate]);
 
   const categories = selectedTopic !== 'Mixed Practice' && TOPICS[selectedTopic] 
     ? Object.keys(TOPICS[selectedTopic]) 
@@ -114,6 +123,23 @@ function Practice() {
       });
 
       setResult(response.data);
+
+      if (mode === 'random') {
+        setCurrentQuestion({
+          ...currentQuestion,
+          correctOptionIndex: response.data.correctOptionIndex,
+          solution: response.data.solution
+        });
+      } else {
+        const updatedQuestions = [...generatedQuestions];
+        updatedQuestions[currentIndex] = {
+          ...updatedQuestions[currentIndex],
+          correctOptionIndex: response.data.correctOptionIndex,
+          solution: response.data.solution
+        };
+        setGeneratedQuestions(updatedQuestions);
+      }
+
       setShowResult(true);
     } catch (error) {
       console.error('Error submitting answer:', error);
