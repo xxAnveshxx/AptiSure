@@ -3,6 +3,7 @@ const TestConfig = require('../models/TestConfig');
 const TestResult = require('../models/TestResult');
 const Question = require('../models/Question');
 const authMiddleware = require('../middleware/auth');
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -65,7 +66,7 @@ router.post('/:id/submit', authMiddleware, async (req, res) => {
       if (isCorrect) {
         score++;
 
-        if (!user.solvedQuestionIds.includes(question._id)) {
+        if (!req.user.solvedQuestionIds.includes(question._id)) {
           const difficultyKey = question.difficulty.toLowerCase();
           
           User.findByIdAndUpdate(req.user._id, {
