@@ -45,9 +45,6 @@ backend/uploads/
 backend/dist/
 backend/build/
 
-backend/data/*.json
-!backend/data/questions-sample.json
-
 frontend/.vite/
 frontend/build/
 frontend/.next/
