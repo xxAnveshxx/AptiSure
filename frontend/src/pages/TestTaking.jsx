@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useBlocker } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Clock, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import api from '../utils/api';
 
 function TestTaking() {
   const { testId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [test, setTest] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -15,11 +16,8 @@ function TestTaking() {
   const [submitting, setSubmitting] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [showTimeWarning, setShowTimeWarning] = useState(false);
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      !submitting && currentLocation.pathname !== nextLocation.pathname
-  );
+  const [showNavigationWarning, setShowNavigationWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -29,6 +27,25 @@ function TestTaking() {
     }
     fetchTestData();
   }, [testId, navigate]);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      const target = e.target.closest('a, button');
+      if (target && !submitting) {
+        const href = target.getAttribute('href');
+        const clickType = target.getAttribute('type');
+        
+        if (href && href !== location.pathname && !href.startsWith('#')) {
+          e.preventDefault();
+          setPendingNavigation(href);
+          setShowNavigationWarning(true);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, [submitting, location]);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -53,9 +70,11 @@ function TestTaking() {
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
-      e.preventDefault();
-      e.returnValue = 'Your test progress will be lost. Are you sure you want to leave?';
-      return e.returnValue;
+      if (!submitting) {
+        e.preventDefault();
+        e.returnValue = 'Your test progress will be lost. Are you sure you want to leave?';
+        return e.returnValue;
+      }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -63,7 +82,7 @@ function TestTaking() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [submitting]);
 
   const fetchTestData = async () => {
     try {
@@ -106,6 +125,16 @@ function TestTaking() {
     }
   };
 
+  const handleConfirmNavigation = () => {
+    setShowNavigationWarning(false);
+    setShowConfirmSubmit(true);
+  };
+
+  const handleCancelNavigation = () => {
+    setShowNavigationWarning(false);
+    setPendingNavigation(null);
+  };
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -138,7 +167,7 @@ function TestTaking() {
         </div>
       )}
 
-      {blocker.state === "blocked" && (
+      {showNavigationWarning && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Leave Test?</h3>
@@ -147,16 +176,13 @@ function TestTaking() {
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => blocker.reset()}
+                onClick={handleCancelNavigation}
                 className="flex-1 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-blue-700"
               >
                 Stay on Test
               </button>
               <button
-                onClick={() => {
-                  setShowConfirmSubmit(true);
-                  blocker.reset();
-                }}
+                onClick={handleConfirmNavigation}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50"
               >
                 Submit & Leave
