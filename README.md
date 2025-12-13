@@ -51,3 +51,20 @@ Secure user data management
 Node.js v18+
 MongoDB (local or Atlas)
 Google OAuth credentials
+
+# Screenshots
+
+## 1. Landing page
+![Landing page](Screenshots/image.png)
+
+## 2. Dashboard
+![Dashboard](Screenshots/image1.png)
+
+## 3. Practice Mode (random)
+![Practice Mode Random](Screenshots/image3.png)
+
+## 4. Practice Mode (generated set)
+![Practice Mode Generated](Screenshots/image4.png)
+
+## 5. Test window
+![Test window](Screenshots/image5.png)
